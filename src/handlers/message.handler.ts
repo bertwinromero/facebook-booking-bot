@@ -116,14 +116,14 @@ async function handlePayload(
       await db.resetConversation(conversationId);
       await facebook.sendTextMessage(
         senderId,
-        "No problem! Let's start over. Would you like to book a consultation?"
+        "No problem! Let's start over. Would you like to book a demo or discovery call?"
       );
       break;
 
     case 'GET_STARTED':
       await facebook.sendTextMessage(
         senderId,
-        "Hi there! I'm here to help you book a consultation. Would you like to schedule an appointment?"
+        "Hi there! I'm here to help you book a demo or discovery call. Would you like to schedule one?"
       );
       break;
 
@@ -168,7 +168,7 @@ async function processIntent(
       } else {
         await facebook.sendQuickReplies(
           senderId,
-          "Which consultation would you like?",
+          "Which would you like - a quick demo or a discovery call?",
           facebook.createServiceQuickReplies()
         );
       }
@@ -340,7 +340,7 @@ async function handleBookingConfirmation(
   if (!selectedTime || !attendeeName || !attendeeEmail) {
     await facebook.sendTextMessage(
       senderId,
-      "I'm missing some information. Let's start over. Would you like to book a consultation?"
+      "I'm missing some information. Let's start over. Would you like to book a demo or discovery call?"
     );
     await db.resetConversation(conversationId);
     return;
@@ -391,7 +391,7 @@ async function handleCancellation(
   if (!booking || !booking.cal_booking_uid) {
     await facebook.sendTextMessage(
       senderId,
-      "I don't see any active bookings for you. Would you like to schedule a new consultation?"
+      "I don't see any active bookings for you. Would you like to schedule a new demo or discovery call?"
     );
     return;
   }
@@ -422,7 +422,7 @@ async function handleReschedule(
   if (!booking || !booking.cal_booking_uid) {
     await facebook.sendTextMessage(
       senderId,
-      "I don't see any active bookings for you. Would you like to schedule a new consultation?"
+      "I don't see any active bookings for you. Would you like to schedule a new demo or discovery call?"
     );
     return;
   }
@@ -435,7 +435,7 @@ async function handleReschedule(
     await db.updateConversationState(conversationId, 'COLLECTING_SERVICE', {});
     await facebook.sendQuickReplies(
       senderId,
-      "I've cancelled your existing booking. Let's schedule a new one! Which consultation would you like?",
+      "I've cancelled your existing booking. Let's schedule a new one! Which would you like - a quick demo or a discovery call?",
       facebook.createServiceQuickReplies()
     );
   } else {

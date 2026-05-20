@@ -106,7 +106,7 @@ export async function createBooking(
     return {
       id: mockId,
       uid: `mock-${mockId}-${Date.now()}`,
-      title: '30 min Consultation',
+      title: '30 min Demo',
       startTime: startTime,
       endTime: new Date(new Date(startTime).getTime() + 30 * 60 * 1000).toISOString(),
       status: 'ACCEPTED',

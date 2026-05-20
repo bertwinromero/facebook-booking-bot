@@ -17,7 +17,7 @@ export function getSystemPrompt(
 CURRENT BOOKING STATE: ${state}
 `;
     if (stateData.selectedService) {
-      contextInfo += `Selected Service: ${stateData.selectedService === '30min' ? '30-minute' : '60-minute'} consultation\n`;
+      contextInfo += `Selected Service: ${stateData.selectedService === '30min' ? '30-minute demo' : '60-minute discovery call'}\n`;
     }
     if (stateData.selectedTime) {
       contextInfo += `Selected Time: ${stateData.selectedTime}\n`;
@@ -82,14 +82,14 @@ WHY MINDNISTRY:
 - No setup fees
 
 YOUR ROLE:
-- Help users book a FREE demo or consultation
+- Help users book a FREE demo or discovery call
 - Answer questions about Mindnistry features and pricing
 - Guide churches to the right plan based on their size
 - Be conversational, warm, and helpful
 
 SERVICES OFFERED (for booking):
 1. 30-minute Demo - Quick overview of Mindnistry features
-2. 60-minute Consultation - In-depth walkthrough and setup assistance
+2. 60-minute Discovery Call - In-depth walkthrough and setup assistance
 
 ${contextInfo}
 
@@ -162,8 +162,8 @@ export function formatConfirmationMessage(
   name: string,
   email: string
 ): string {
-  const serviceDisplay = service === '30min' ? '30-minute' : '60-minute';
-  return `Perfect! Let me confirm your booking:\n\n📅 ${serviceDisplay} consultation\n⏰ ${time}\n👤 ${name}\n📧 ${email}\n\nShall I confirm this booking?`;
+  const serviceDisplay = service === '30min' ? '30-minute demo' : '60-minute discovery call';
+  return `Perfect! Let me confirm your booking:\n\n📅 ${serviceDisplay}\n⏰ ${time}\n👤 ${name}\n📧 ${email}\n\nShall I confirm this booking?`;
 }
 
 export function formatBookingConfirmedMessage(

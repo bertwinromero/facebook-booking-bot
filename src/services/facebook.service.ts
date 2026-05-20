@@ -219,12 +219,12 @@ export function createServiceQuickReplies(): QuickReply[] {
   return [
     {
       content_type: 'text',
-      title: '30 min consultation',
+      title: '30 min demo',
       payload: 'SERVICE_30MIN',
     },
     {
       content_type: 'text',
-      title: '60 min consultation',
+      title: '60 min discovery call',
       payload: 'SERVICE_60MIN',
     },
   ];

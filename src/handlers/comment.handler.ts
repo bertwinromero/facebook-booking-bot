@@ -65,7 +65,7 @@ export async function handleComment(change: FacebookChange): Promise<void> {
       try {
         await facebook.sendPrivateReply(
           commentId,
-          `Hi ${commenterName}! I saw your comment and would love to help you book a consultation. Just reply here to get started, and I'll walk you through the process! 📅`
+          `Hi ${commenterName}! I saw your comment and would love to help you book a discovery call. Just reply here to get started, and I'll walk you through the process! 📅`
         );
       } catch (error) {
         // Private reply might fail if user hasn't interacted with page before
@@ -134,7 +134,7 @@ async function generatePublicReply(
 
     // Fallback response
     if (detectBookingIntent(commentText)) {
-      return `Hi ${commenterName}! Thanks for your interest! Send us a direct message and we'll help you book a consultation. 📩`;
+      return `Hi ${commenterName}! Thanks for your interest! Send us a direct message and we'll help you book a discovery call. 📩`;
     }
 
     return `Hi ${commenterName}! Thanks for reaching out. Feel free to send us a message if you have any questions!`;
