@@ -1,10 +1,12 @@
 import { config } from '../config/env.js';
 import type { ConversationState, StateData, AvailabilitySlot } from '../types/index.js';
+import { getRelevantKnowledge } from '../services/knowledge.service.js';
 
 export function getSystemPrompt(
   state: ConversationState,
   stateData: StateData,
-  availableSlots?: AvailabilitySlot[]
+  availableSlots?: AvailabilitySlot[],
+  userMessage?: string
 ): string {
   const businessName = config.business.name;
 
@@ -34,6 +36,9 @@ AVAILABLE TIME SLOTS:
 ${availableSlots.map((slot, i) => `${i + 1}. ${slot.displayTime}`).join('\n')}
 `;
   }
+
+  // Get relevant knowledge based on user's message
+  const relevantKnowledge = userMessage ? getRelevantKnowledge(userMessage) : '';
 
   return `You are a friendly and professional booking assistant for ${businessName}.
 
@@ -134,7 +139,8 @@ IMPORTANT:
 - Extract data carefully - names, emails, service choices, time selections
 - If user says something like "the first one" or "option 2", map it to the actual time slot
 - Validate email format loosely - if it looks like an email, extract it
-- Be helpful if user seems confused about the process`;
+- Be helpful if user seems confused about the process
+${relevantKnowledge}`;
 }
 
 export function formatAvailabilityMessage(slots: AvailabilitySlot[]): string {

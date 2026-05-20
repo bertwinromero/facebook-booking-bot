@@ -39,7 +39,7 @@ export async function generateResponse(
   stateData: StateData,
   availableSlots?: AvailabilitySlot[]
 ): Promise<AIResponse> {
-  const systemPrompt = getSystemPrompt(state, stateData, availableSlots);
+  const systemPrompt = getSystemPrompt(state, stateData, availableSlots, userMessage);
 
   try {
     if (config.ai.provider === 'openai') {
