@@ -61,9 +61,21 @@ export async function handleMessage(event: FacebookMessaging): Promise<void> {
     let availableSlots: AvailabilitySlot[] | undefined;
     if (state === 'SHOWING_TIMES' && stateData.availableSlots) {
       availableSlots = stateData.availableSlots;
+
+      // Shortcut: if user types just a number, select that slot directly
+      const numMatch = userInput.trim().match(/^(\d+)$/);
+      if (numMatch) {
+        const slotIndex = parseInt(numMatch[1], 10) - 1;
+        if (slotIndex >= 0 && slotIndex < availableSlots.length) {
+          const selectedSlot = availableSlots[slotIndex];
+          await handleTimeSelection(senderId, conversation.id, selectedSlot.time, stateData);
+          return;
+        }
+      }
     }
 
     // Generate AI response
+    console.log(`Generating AI response for state: ${state}, input: "${userInput.substring(0, 50)}..."`);
     const aiResponse = await ai.generateResponse(
       userInput,
       history,
@@ -71,6 +83,7 @@ export async function handleMessage(event: FacebookMessaging): Promise<void> {
       stateData,
       availableSlots
     );
+    console.log(`AI response intent: ${aiResponse.intent}, text length: ${aiResponse.text.length}`);
 
     // Process based on intent and state
     await processIntent(
