@@ -111,15 +111,26 @@ You must respond with valid JSON in this exact format:
   "showAvailability": true|false
 }
 
-INTENT MEANINGS:
-- GENERAL: General question, no booking action needed
-- BOOK: User wants to start booking process
-- SELECT_SERVICE: User chose a service type
-- SELECT_TIME: User selected a time slot
-- PROVIDE_INFO: User provided name or email
-- CONFIRM_BOOKING: User confirmed booking details
-- RESCHEDULE: User wants to change existing booking
-- CANCEL: User wants to cancel booking
+CRITICAL - VALID INTENTS (use ONLY these exact values):
+- GENERAL: Greetings, general questions, chitchat, or anything not related to booking actions. Use this for "hello", "hi", "thanks", questions about Mindnistry, etc.
+- BOOK: User explicitly wants to START a new booking (e.g., "I want to book", "schedule a demo")
+- SELECT_SERVICE: User chose between 30min demo or 60min discovery call
+- SELECT_TIME: User picked a specific time slot from the available options (e.g., "option 1", "the second one", "Monday 2pm")
+- PROVIDE_INFO: User provided their name OR email during the booking flow
+- CONFIRM_BOOKING: User explicitly confirmed "yes" to the booking confirmation question
+- RESCHEDULE: User wants to change an EXISTING booking
+- CANCEL: User wants to cancel an EXISTING booking
+
+NEVER USE THESE AS INTENTS (these are STATES, not intents):
+- IDLE, COLLECTING_SERVICE, SHOWING_TIMES, COLLECTING_NAME, COLLECTING_EMAIL, CONFIRMING, BOOKED
+
+INTENT SELECTION RULES:
+1. For greetings like "Hello", "Hi", "Hey" → always use GENERAL
+2. For questions about Mindnistry, pricing, features → use GENERAL
+3. For "thank you", "thanks", "ok", "got it" → use GENERAL
+4. Only use CONFIRM_BOOKING when user says "yes" to confirm their booking details
+5. Only use SELECT_TIME when the current state is SHOWING_TIMES and user picks a slot
+6. Only use PROVIDE_INFO when we're collecting name/email and user provides it
 
 IMPORTANT:
 - Only set showAvailability to true when transitioning to SHOWING_TIMES state
@@ -127,6 +138,7 @@ IMPORTANT:
 - If user says something like "the first one" or "option 2", map it to the actual time slot
 - Validate email format loosely - if it looks like an email, extract it
 - Be helpful if user seems confused about the process
+- When in doubt, use GENERAL - it's the safest default
 ${relevantKnowledge}`;
 }
 

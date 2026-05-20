@@ -132,10 +132,18 @@ function parseAIResponse(text: string): AIResponse {
 
     const parsed = JSON.parse(jsonMatch[0]);
 
-    if (!parsed.text || !parsed.intent) {
+    // Validate intent - fall back to GENERAL if invalid
+    let intent: AIResponse['intent'] = 'GENERAL';
+    if (parsed.intent && isValidIntent(parsed.intent)) {
+      intent = parsed.intent;
+    } else if (parsed.intent) {
+      console.warn(`Invalid intent received: "${parsed.intent}", falling back to GENERAL`);
+    }
+
+    if (!parsed.text) {
       return {
-        text: parsed.text || text.trim(),
-        intent: parsed.intent || 'GENERAL',
+        text: text.trim(),
+        intent,
       };
     }
 
@@ -161,7 +169,7 @@ function parseAIResponse(text: string): AIResponse {
 
     return {
       text: parsed.text,
-      intent: parsed.intent,
+      intent,
       extractedData: Object.keys(extractedData).length > 0 ? extractedData : undefined,
       showAvailability: parsed.showAvailability === true,
     };
@@ -177,6 +185,21 @@ function parseAIResponse(text: string): AIResponse {
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+const VALID_INTENTS = [
+  'GENERAL',
+  'BOOK',
+  'SELECT_SERVICE',
+  'SELECT_TIME',
+  'PROVIDE_INFO',
+  'CONFIRM_BOOKING',
+  'RESCHEDULE',
+  'CANCEL',
+] as const;
+
+function isValidIntent(intent: string): intent is AIResponse['intent'] {
+  return VALID_INTENTS.includes(intent as typeof VALID_INTENTS[number]);
 }
 
 export function mapSlotSelectionToTime(
