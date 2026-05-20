@@ -1,0 +1,44 @@
+{
+  "name": "facebook-booking-bot",
+  "version": "1.0.0",
+  "description": "AI-powered Facebook Messenger bot for booking consultations",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:tunnel": "concurrently -n server,ngrok -c blue,green \"tsx watch src/index.ts\" \"ngrok http 3000\"",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "facebook",
+    "messenger",
+    "bot",
+    "booking",
+    "ai",
+    "claude"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.97.1",
+    "@fastify/formbody": "^8.0.2",
+    "bullmq": "^5.76.10",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5",
+    "ioredis": "^5.10.1",
+    "openai": "^6.38.0",
+    "pg": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@types/pg": "^8.20.0",
+    "concurrently": "^9.2.1",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  }
+}
