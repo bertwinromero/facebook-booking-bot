@@ -7,6 +7,11 @@ const { Pool } = pg;
 const pool = new Pool({
   connectionString: config.database.url,
   ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10000,
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected database error:', err);
 });
 
 // Conversation Operations
@@ -152,12 +157,14 @@ export async function resetStaleConversations(): Promise<void> {
 }
 
 // Health check
-export async function healthCheck(): Promise<boolean> {
+export async function healthCheck(): Promise<{ connected: boolean; error?: string }> {
   try {
     await pool.query('SELECT 1');
-    return true;
-  } catch {
-    return false;
+    return { connected: true };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Database health check failed:', error);
+    return { connected: false, error };
   }
 }
 

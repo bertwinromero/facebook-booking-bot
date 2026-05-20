@@ -30,13 +30,17 @@ await fastify.register(formbody);
 
 // Health check endpoint
 fastify.get('/health', async (_request, reply) => {
-  const dbHealthy = await healthCheck();
+  const dbResult = await healthCheck();
 
-  if (dbHealthy) {
+  if (dbResult.connected) {
     return reply.send({ status: 'healthy', database: 'connected' });
   }
 
-  return reply.status(503).send({ status: 'unhealthy', database: 'disconnected' });
+  return reply.status(503).send({
+    status: 'unhealthy',
+    database: 'disconnected',
+    error: dbResult.error
+  });
 });
 
 // Root endpoint
