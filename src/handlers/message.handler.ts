@@ -20,7 +20,7 @@ export async function handleMessage(event: FacebookMessaging): Promise<void> {
     if (event.message?.attachments) {
       await facebook.sendTextMessage(
         senderId,
-        "Thanks for the attachment! I can only process text messages at the moment. How can I help you today?"
+        "Oh, I can't view attachments yet! Just send me a message and I'd be happy to help 😊"
       );
     }
     return;
@@ -98,7 +98,7 @@ export async function handleMessage(event: FacebookMessaging): Promise<void> {
     console.error('Error handling message:', error);
     await facebook.sendTextMessage(
       senderId,
-      "I'm sorry, something went wrong. Please try again in a moment."
+      "Oops, something went wrong on my end! Can you try that again?"
     );
   } finally {
     await facebook.typingOff(senderId);
@@ -129,14 +129,14 @@ async function handlePayload(
       await db.resetConversation(conversationId);
       await facebook.sendTextMessage(
         senderId,
-        "No problem! Let's start over. Would you like to book a demo or discovery call?"
+        "No worries! Would you still like to book a demo or discovery call?"
       );
       break;
 
     case 'GET_STARTED':
       await facebook.sendTextMessage(
         senderId,
-        "Hi there! I'm here to help you book a demo or discovery call. Would you like to schedule one?"
+        "Hey! I'm Joy from Mindnistry 👋 Want to see how we can help your church? I can set you up with a quick demo or discovery call!"
       );
       break;
 
@@ -181,7 +181,7 @@ async function processIntent(
       } else {
         await facebook.sendQuickReplies(
           senderId,
-          "Which would you like - a quick demo or a discovery call?",
+          "Which works better for you - a quick 30-min demo or a longer discovery call?",
           facebook.createServiceQuickReplies()
         );
       }
@@ -203,7 +203,7 @@ async function processIntent(
         } else {
           await facebook.sendTextMessage(
             senderId,
-            "I couldn't find that time slot. Could you please pick one from the list or tell me the number?"
+            "Hmm, I couldn't find that time. Could you just reply with the number (like 1 or 2)?"
           );
         }
       }
@@ -277,7 +277,7 @@ async function handleServiceSelection(
     console.error('Error fetching availability:', error);
     await facebook.sendTextMessage(
       senderId,
-      "I'm having trouble checking availability right now. Please try again in a moment."
+      "Having trouble loading the schedule right now. Can you try again in a bit?"
     );
   }
 }
@@ -296,7 +296,7 @@ async function handleTimeSelection(
 
   await facebook.sendTextMessage(
     senderId,
-    `Great choice! I have you down for ${calendar.formatBookingTime(selectedTime)}.\n\nWhat's your full name?`
+    `Nice! ${calendar.formatBookingTime(selectedTime)} it is 📅\n\nWhat's your name?`
   );
 }
 
@@ -315,12 +315,12 @@ async function handleInfoProvided(
       await db.updateConversationState(conversationId, 'COLLECTING_EMAIL', newStateData);
       await facebook.sendTextMessage(
         senderId,
-        `Thanks, ${extractedData.name}! What's your email address?`
+        `Got it, ${extractedData.name}! And your email? (So I can send you the calendar invite)`
       );
     } else {
       await facebook.sendTextMessage(
         senderId,
-        "I didn't catch your name. Could you please tell me your full name?"
+        "Sorry, didn't catch that! What's your name?"
       );
     }
   } else if (state === 'COLLECTING_EMAIL') {
@@ -343,7 +343,7 @@ async function handleInfoProvided(
     } else {
       await facebook.sendTextMessage(
         senderId,
-        "That doesn't look like a valid email address. Could you please provide your email?"
+        "Hmm that doesn't look like an email. Can you double-check and send it again?"
       );
     }
   }
@@ -359,7 +359,7 @@ async function handleBookingConfirmation(
   if (!selectedTime || !attendeeName || !attendeeEmail) {
     await facebook.sendTextMessage(
       senderId,
-      "I'm missing some information. Let's start over. Would you like to book a demo or discovery call?"
+      "Looks like I'm missing some info. Want to start fresh? I can help you book a demo!"
     );
     await db.resetConversation(conversationId);
     return;
@@ -396,7 +396,7 @@ async function handleBookingConfirmation(
     console.error('Error creating booking:', error);
     await facebook.sendTextMessage(
       senderId,
-      "I'm sorry, there was an error creating your booking. Please try again or contact us directly."
+      "Oops, something went wrong booking that. Want to try again?"
     );
   }
 }
@@ -410,7 +410,7 @@ async function handleCancellation(
   if (!booking || !booking.cal_booking_uid) {
     await facebook.sendTextMessage(
       senderId,
-      "I don't see any active bookings for you. Would you like to schedule a new demo or discovery call?"
+      "I don't see any bookings under your name. Want me to set one up?"
     );
     return;
   }
@@ -422,12 +422,12 @@ async function handleCancellation(
     await db.resetConversation(conversationId);
     await facebook.sendTextMessage(
       senderId,
-      "Your booking has been cancelled. Would you like to schedule a new appointment?"
+      "Done, I've cancelled that for you. Would you like to book a new time?"
     );
   } else {
     await facebook.sendTextMessage(
       senderId,
-      "I couldn't cancel your booking. Please contact us directly for assistance."
+      "Hmm, I couldn't cancel that. Can you email us at support@mindnistry.com?"
     );
   }
 }
@@ -441,7 +441,7 @@ async function handleReschedule(
   if (!booking || !booking.cal_booking_uid) {
     await facebook.sendTextMessage(
       senderId,
-      "I don't see any active bookings for you. Would you like to schedule a new demo or discovery call?"
+      "I don't see any bookings under your name. Want me to set one up?"
     );
     return;
   }
@@ -454,13 +454,13 @@ async function handleReschedule(
     await db.updateConversationState(conversationId, 'COLLECTING_SERVICE', {});
     await facebook.sendQuickReplies(
       senderId,
-      "I've cancelled your existing booking. Let's schedule a new one! Which would you like - a quick demo or a discovery call?",
+      "Done! I've cancelled your old booking. Let's pick a new time - quick demo or discovery call?",
       facebook.createServiceQuickReplies()
     );
   } else {
     await facebook.sendTextMessage(
       senderId,
-      "I couldn't reschedule your booking. Please contact us directly for assistance."
+      "Having trouble rescheduling. Mind emailing us at support@mindnistry.com?"
     );
   }
 }
