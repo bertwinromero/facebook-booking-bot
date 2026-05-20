@@ -27,10 +27,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",
     "@fastify/formbody": "^8.0.2",
-    "bullmq": "^5.76.10",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
-    "ioredis": "^5.10.1",
     "openai": "^6.38.0",
     "pg": "^8.21.0"
   },
