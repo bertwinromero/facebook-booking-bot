@@ -60,16 +60,22 @@ export async function facebookWebhookRoutes(fastify: FastifyInstance): Promise<v
       }
 
       // Process entries
+      console.log('Webhook body:', JSON.stringify(body, null, 2));
       for (const entry of body.entry) {
+        console.log('Processing entry:', entry.id);
         // Handle messaging events
         if (entry.messaging) {
+          console.log('Found messaging events:', entry.messaging.length);
           for (const messagingEvent of entry.messaging) {
             processMessagingEvent(messagingEvent);
           }
+        } else {
+          console.log('No messaging in entry');
         }
 
         // Handle feed/comment events
         if (entry.changes) {
+          console.log('Found changes:', entry.changes.length);
           for (const change of entry.changes) {
             processChangeEvent(change);
           }
@@ -85,15 +91,21 @@ export async function facebookWebhookRoutes(fastify: FastifyInstance): Promise<v
 function processMessagingEvent(event: FacebookMessaging): void {
   // Process asynchronously to not block webhook response
   setImmediate(async () => {
+    console.log('Processing messaging event:', JSON.stringify(event, null, 2));
     try {
       // Skip echo messages (messages sent by our page)
       if ((event.message as { is_echo?: boolean })?.is_echo) {
+        console.log('Skipping echo message');
         return;
       }
 
       // Handle message or postback
       if (event.message || event.postback) {
+        console.log('Calling handleMessage...');
         await handleMessage(event);
+        console.log('handleMessage completed');
+      } else {
+        console.log('No message or postback in event');
       }
     } catch (error) {
       console.error('Error processing messaging event:', error);
