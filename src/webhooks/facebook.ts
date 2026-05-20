@@ -43,6 +43,10 @@ export async function facebookWebhookRoutes(fastify: FastifyInstance): Promise<v
       const signature = request.headers['x-hub-signature-256'] as string | undefined;
       const rawBody = (request as unknown as { rawBody: string }).rawBody;
 
+      console.log('Signature header:', signature);
+      console.log('Raw body exists:', !!rawBody);
+      console.log('Raw body length:', rawBody?.length);
+
       if (!verifyFacebookSignature(signature, rawBody, config.facebook.appSecret)) {
         console.warn('Invalid webhook signature');
         return reply.status(401).send('Unauthorized');

@@ -1,3 +1,6 @@
+import dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
+
 import Fastify from 'fastify';
 import formbody from '@fastify/formbody';
 import { config } from './config/env.js';
