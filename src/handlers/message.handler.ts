@@ -197,13 +197,19 @@ async function processIntent(
       break;
 
     case 'PROVIDE_INFO':
-      await handleInfoProvided(
-        senderId,
-        conversationId,
-        state,
-        stateData,
-        extractedData
-      );
+      // Only handle as info collection during booking flow
+      if (state === 'COLLECTING_NAME' || state === 'COLLECTING_EMAIL') {
+        await handleInfoProvided(
+          senderId,
+          conversationId,
+          state,
+          stateData,
+          extractedData
+        );
+      } else {
+        // For general info requests (not during booking), send the AI response
+        await facebook.sendTextMessage(senderId, aiResponse.text);
+      }
       break;
 
     case 'CONFIRM_BOOKING':
