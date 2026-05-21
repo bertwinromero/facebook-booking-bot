@@ -42,11 +42,17 @@ export async function generateResponse(
   const systemPrompt = getSystemPrompt(state, stateData, availableSlots, userMessage);
 
   try {
+    let response: AIResponse;
     if (config.ai.provider === 'openai') {
-      return await generateWithOpenAI(userMessage, conversationHistory, systemPrompt);
+      response = await generateWithOpenAI(userMessage, conversationHistory, systemPrompt);
     } else {
-      return await generateWithAnthropic(userMessage, conversationHistory, systemPrompt);
+      response = await generateWithAnthropic(userMessage, conversationHistory, systemPrompt);
     }
+
+    // Apply state-aware intent correction (AI often gets this wrong)
+    response = correctIntentForState(response, state, userMessage);
+
+    return response;
   } catch (error) {
     console.error('AI Service Error:', error);
     return {
@@ -54,6 +60,84 @@ export async function generateResponse(
       intent: 'GENERAL',
     };
   }
+}
+
+/**
+ * Corrects AI intent based on conversation state.
+ * The AI often ignores the current state and returns wrong intents.
+ * This function enforces state-based intent rules on the server side.
+ */
+function correctIntentForState(
+  response: AIResponse,
+  state: ConversationState,
+  userMessage: string
+): AIResponse {
+  const lowerMessage = userMessage.toLowerCase().trim();
+
+  // In COLLECTING_NAME state: if user provides text (not a question), it's their name
+  if (state === 'COLLECTING_NAME') {
+    // Check if it's NOT a question or command
+    const isQuestion = lowerMessage.includes('?') ||
+                       lowerMessage.startsWith('what') ||
+                       lowerMessage.startsWith('how') ||
+                       lowerMessage.startsWith('why') ||
+                       lowerMessage.startsWith('can');
+    const isCancel = lowerMessage.includes('cancel') || lowerMessage.includes('stop');
+
+    if (!isQuestion && !isCancel && response.intent !== 'PROVIDE_INFO') {
+      console.log(`State correction: In COLLECTING_NAME, changing intent from ${response.intent} to PROVIDE_INFO`);
+      return {
+        ...response,
+        intent: 'PROVIDE_INFO',
+        extractedData: {
+          ...response.extractedData,
+          name: userMessage.trim(), // Use the raw message as the name
+        },
+      };
+    }
+  }
+
+  // In COLLECTING_EMAIL state: if user provides text with @, it's their email
+  if (state === 'COLLECTING_EMAIL') {
+    const hasEmail = lowerMessage.includes('@');
+    const isCancel = lowerMessage.includes('cancel') || lowerMessage.includes('stop');
+
+    if (hasEmail && !isCancel && response.intent !== 'PROVIDE_INFO') {
+      // Extract email from the message
+      const emailMatch = userMessage.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
+      if (emailMatch) {
+        console.log(`State correction: In COLLECTING_EMAIL, changing intent from ${response.intent} to PROVIDE_INFO`);
+        return {
+          ...response,
+          intent: 'PROVIDE_INFO',
+          extractedData: {
+            ...response.extractedData,
+            email: emailMatch[0].toLowerCase(),
+          },
+        };
+      }
+    }
+  }
+
+  // In CONFIRMING state: "yes" should be CONFIRM_BOOKING
+  if (state === 'CONFIRMING') {
+    const isYes = lowerMessage === 'yes' ||
+                  lowerMessage === 'yep' ||
+                  lowerMessage === 'yeah' ||
+                  lowerMessage === 'confirm' ||
+                  lowerMessage.includes('looks good') ||
+                  lowerMessage.includes('yes please');
+
+    if (isYes && response.intent !== 'CONFIRM_BOOKING') {
+      console.log(`State correction: In CONFIRMING, changing intent from ${response.intent} to CONFIRM_BOOKING`);
+      return {
+        ...response,
+        intent: 'CONFIRM_BOOKING',
+      };
+    }
+  }
+
+  return response;
 }
 
 async function generateWithOpenAI(
