@@ -60,9 +60,15 @@ export async function facebookWebhookRoutes(fastify: FastifyInstance): Promise<v
       }
 
       // Process entries
-      console.log('Webhook body:', JSON.stringify(body, null, 2));
+      console.log('=== WEBHOOK RECEIVED ===');
+      console.log('Webhook object type:', body.object);
+      console.log('Number of entries:', body.entry?.length);
+      console.log('Full webhook body:', JSON.stringify(body, null, 2));
+
       for (const entry of body.entry) {
-        console.log('Processing entry:', entry.id);
+        console.log('--- Processing entry:', entry.id);
+        console.log('Entry keys:', Object.keys(entry));
+
         // Handle messaging events
         if (entry.messaging) {
           console.log('Found messaging events:', entry.messaging.length);
@@ -75,10 +81,15 @@ export async function facebookWebhookRoutes(fastify: FastifyInstance): Promise<v
 
         // Handle feed/comment events
         if (entry.changes) {
-          console.log('Found changes:', entry.changes.length);
+          console.log('*** FOUND CHANGES (feed/comments) ***');
+          console.log('Number of changes:', entry.changes.length);
           for (const change of entry.changes) {
+            console.log('Change field:', change.field);
+            console.log('Change value:', JSON.stringify(change.value, null, 2));
             processChangeEvent(change);
           }
+        } else {
+          console.log('No changes in entry (no feed/comment events)');
         }
       }
 
@@ -117,9 +128,21 @@ function processChangeEvent(change: FacebookChange): void {
   // Process asynchronously
   setImmediate(async () => {
     try {
+      console.log('=== PROCESSING CHANGE EVENT ===');
+      console.log('Field:', change.field);
+      console.log('Item type:', change.value?.item);
+      console.log('Verb:', change.value?.verb);
+      console.log('From:', JSON.stringify(change.value?.from));
+      console.log('Message:', change.value?.message);
+      console.log('Comment ID:', change.value?.comment_id);
+      console.log('Post ID:', change.value?.post_id);
+
       // Handle comment events
       if (change.field === 'feed' && change.value.item === 'comment') {
+        console.log('*** THIS IS A COMMENT EVENT - calling handleComment ***');
         await handleComment(change);
+      } else {
+        console.log('Not a comment event, skipping. Field:', change.field, 'Item:', change.value?.item);
       }
     } catch (error) {
       console.error('Error processing change event:', error);

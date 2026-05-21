@@ -27,18 +27,29 @@ const BOOKING_KEYWORDS = [
 export async function handleComment(change: FacebookChange): Promise<void> {
   const { value } = change;
 
+  console.log('=== HANDLE COMMENT CALLED ===');
+  console.log('Full change value:', JSON.stringify(value, null, 2));
+  console.log('Verb:', value.verb);
+  console.log('From ID:', value.from?.id);
+  console.log('Page ID:', config.facebook.pageId);
+  console.log('Parent ID:', value.parent_id);
+  console.log('Post ID:', value.post_id);
+
   // Only handle new comments (not edits or deletes)
   if (value.verb !== 'add') {
+    console.log('SKIPPING: verb is not "add", it is:', value.verb);
     return;
   }
 
   // Ignore comments from our own page
   if (value.from.id === config.facebook.pageId) {
+    console.log('SKIPPING: Comment is from our own page');
     return;
   }
 
   // Ignore replies to other comments (only handle top-level comments)
   if (value.parent_id && value.parent_id !== value.post_id) {
+    console.log('SKIPPING: This is a reply to another comment, not a top-level comment');
     return;
   }
 
@@ -47,10 +58,11 @@ export async function handleComment(change: FacebookChange): Promise<void> {
   const commenterName = value.from.name;
 
   if (!commentId || !commentText) {
+    console.log('SKIPPING: Missing commentId or commentText');
     return;
   }
 
-  console.log(`Processing comment from ${commenterName}: ${commentText}`);
+  console.log(`*** PROCESSING COMMENT from ${commenterName}: ${commentText} ***`);
 
   try {
     // Check if comment shows booking intent
