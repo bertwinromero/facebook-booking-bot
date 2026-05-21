@@ -171,19 +171,26 @@ async function processIntent(
       break;
 
     case 'SELECT_SERVICE':
-      if (extractedData?.service) {
-        await handleServiceSelection(
-          senderId,
-          conversationId,
-          extractedData.service,
-          stateData
-        );
+      // Only process service selection in appropriate states
+      if (state === 'IDLE' || state === 'COLLECTING_SERVICE') {
+        if (extractedData?.service) {
+          await handleServiceSelection(
+            senderId,
+            conversationId,
+            extractedData.service,
+            stateData
+          );
+        } else {
+          await facebook.sendQuickReplies(
+            senderId,
+            "Which works better for you - a quick 30-min demo or a longer discovery call?",
+            facebook.createServiceQuickReplies()
+          );
+        }
       } else {
-        await facebook.sendQuickReplies(
-          senderId,
-          "Which works better for you - a quick 30-min demo or a longer discovery call?",
-          facebook.createServiceQuickReplies()
-        );
+        // Wrong state for service selection - AI made a mistake
+        console.warn(`SELECT_SERVICE intent received but state is ${state}, sending AI text instead`);
+        await facebook.sendTextMessage(senderId, aiResponse.text);
       }
       break;
 
@@ -226,7 +233,14 @@ async function processIntent(
       break;
 
     case 'CONFIRM_BOOKING':
-      await handleBookingConfirmation(senderId, conversationId, stateData);
+      // Only process confirmation if we're actually in CONFIRMING state
+      if (state === 'CONFIRMING') {
+        await handleBookingConfirmation(senderId, conversationId, stateData);
+      } else {
+        // AI returned wrong intent - just send the response text
+        console.warn(`CONFIRM_BOOKING intent received but state is ${state}, ignoring`);
+        await facebook.sendTextMessage(senderId, aiResponse.text);
+      }
       break;
 
     case 'CANCEL':
