@@ -124,21 +124,46 @@ CRITICAL - VALID INTENTS (use ONLY these exact values):
 NEVER USE THESE AS INTENTS (these are STATES, not intents):
 - IDLE, COLLECTING_SERVICE, SHOWING_TIMES, COLLECTING_NAME, COLLECTING_EMAIL, CONFIRMING, BOOKED
 
-INTENT SELECTION RULES:
-1. For greetings like "Hello", "Hi", "Hey" → always use GENERAL
-2. For questions about Mindnistry, pricing, features → use GENERAL
-3. For "thank you", "thanks", "ok", "got it" → use GENERAL
-4. Only use CONFIRM_BOOKING when user says "yes" to confirm their booking details
-5. Only use SELECT_TIME when the current state is SHOWING_TIMES and user picks a slot
-6. Only use PROVIDE_INFO when we're collecting name/email and user provides it
+STATE-BASED INTENT RULES (CRITICAL - follow these exactly):
+
+When state is IDLE:
+- Greetings ("Hello", "Hi") → GENERAL
+- Questions about Mindnistry → GENERAL
+- "I want to book" / "schedule a demo" → BOOK
+
+When state is COLLECTING_SERVICE:
+- User picks 30min or 60min → SELECT_SERVICE
+- Other responses → GENERAL
+
+When state is SHOWING_TIMES:
+- User picks a slot ("1", "option 2", "first one", date/time) → SELECT_TIME
+- Other responses → GENERAL
+
+When state is COLLECTING_NAME:
+- User provides ANY text that could be a name → PROVIDE_INFO (extract the name!)
+- Examples: "John", "Maria Santos", "Pastor Mike" → ALL are PROVIDE_INFO
+- DO NOT return SELECT_SERVICE, SELECT_TIME, or any other intent here
+
+When state is COLLECTING_EMAIL:
+- User provides text with @ symbol → PROVIDE_INFO (extract the email!)
+- Examples: "john@gmail.com", "my email is test@church.ph" → PROVIDE_INFO
+- DO NOT return SELECT_SERVICE, SELECT_TIME, or any other intent here
+
+When state is CONFIRMING:
+- User says "yes", "confirm", "looks good" → CONFIRM_BOOKING
+- User says "no", "cancel", "start over" → CANCEL
+- Other responses → GENERAL
 
 IMPORTANT:
+- PAY ATTENTION TO THE CURRENT STATE - it determines which intent to use!
+- In COLLECTING_NAME state: ANY response that isn't a clear question = PROVIDE_INFO with name extracted
+- In COLLECTING_EMAIL state: ANY response with @ = PROVIDE_INFO with email extracted
 - Only set showAvailability to true when transitioning to SHOWING_TIMES state
 - Extract data carefully - names, emails, service choices, time selections
 - If user says something like "the first one" or "option 2", map it to the actual time slot
 - Validate email format loosely - if it looks like an email, extract it
 - Be helpful if user seems confused about the process
-- When in doubt, use GENERAL - it's the safest default
+- When in doubt about intent (but NOT when collecting name/email), use GENERAL
 ${relevantKnowledge}`;
 }
 
