@@ -3,11 +3,24 @@ import type { AvailabilitySlot, CalBookingResponse } from '../types/index.js';
 
 const { calcom } = config;
 
-interface CalAvailabilityResponse {
-  busy: Array<{ start: string; end: string }>;
-  timeZone: string;
-  dateRanges: Array<{ start: string; end: string }>;
-  slots: Record<string, Array<{ time: string }>>;
+interface CalV2SlotsResponse {
+  status: string;
+  data: Record<string, Array<{ start: string; end?: string }>>;
+}
+
+interface CalV2BookingResponse {
+  status: string;
+  data: {
+    id: number;
+    uid: string;
+    title: string;
+    status: string;
+    start: string;
+    end: string;
+    duration?: number;
+    location?: string;
+    attendees?: Array<{ name: string; email: string }>;
+  };
 }
 
 // Generate mock availability slots for testing
@@ -38,6 +51,18 @@ function generateMockSlots(): AvailabilitySlot[] {
   return slots.slice(0, 5);
 }
 
+// Helper to get API headers for Cal.com v2
+function getCalHeaders(includeContentType = false): Record<string, string> {
+  const headers: Record<string, string> = {
+    'cal-api-version': calcom.apiVersion,
+    'Authorization': `Bearer ${calcom.apiKey}`,
+  };
+  if (includeContentType) {
+    headers['Content-Type'] = 'application/json';
+  }
+  return headers;
+}
+
 export async function getAvailability(
   days: number = 7
 ): Promise<AvailabilitySlot[]> {
@@ -51,18 +76,24 @@ export async function getAvailability(
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + days);
 
+  // Format dates as YYYY-MM-DD
   const startStr = startDate.toISOString().split('T')[0];
   const endStr = endDate.toISOString().split('T')[0];
 
-  const url = new URL(`${calcom.baseUrl}/availability`);
-  url.searchParams.set('apiKey', calcom.apiKey);
+  // Cal.com API v2 slots endpoint
+  const url = new URL(`${calcom.baseUrl}/slots`);
   url.searchParams.set('eventTypeId', calcom.eventTypeId.toString());
-  url.searchParams.set('startTime', `${startStr}T00:00:00Z`);
-  url.searchParams.set('endTime', `${endStr}T23:59:59Z`);
+  url.searchParams.set('start', startStr);
+  url.searchParams.set('end', endStr);
   url.searchParams.set('timeZone', config.business.timezone);
 
   try {
-    const response = await fetch(url.toString());
+    console.log('Fetching Cal.com availability:', url.toString().replace(calcom.apiKey, '***'));
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: getCalHeaders(),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -70,22 +101,24 @@ export async function getAvailability(
       throw new Error(`Cal.com API error: ${response.status}`);
     }
 
-    const data = await response.json() as CalAvailabilityResponse;
+    const data = await response.json() as CalV2SlotsResponse;
+    console.log('Cal.com response status:', data.status);
 
     const slots: AvailabilitySlot[] = [];
 
-    if (data.slots) {
-      for (const [_date, daySlots] of Object.entries(data.slots)) {
+    if (data.data) {
+      for (const [_date, daySlots] of Object.entries(data.data)) {
         for (const slot of daySlots) {
           slots.push({
-            time: slot.time,
-            displayTime: formatSlotTime(slot.time),
+            time: slot.start,
+            displayTime: formatSlotTime(slot.start),
           });
         }
       }
     }
 
     slots.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+    console.log(`Found ${slots.length} available slots`);
     return slots.slice(0, 10);
   } catch (error) {
     console.error('Failed to fetch availability:', error);
@@ -113,29 +146,29 @@ export async function createBooking(
     };
   }
 
-  const url = `${calcom.baseUrl}/bookings?apiKey=${calcom.apiKey}`;
+  const url = `${calcom.baseUrl}/bookings`;
 
+  // Cal.com API v2 booking format
   const body = {
     eventTypeId: calcom.eventTypeId,
     start: startTime,
-    responses: {
+    attendee: {
       name,
       email,
-      notes: notes || '',
+      timeZone: config.business.timezone,
     },
-    timeZone: config.business.timezone,
-    language: 'en',
     metadata: {
       source: 'facebook-messenger-bot',
+      notes: notes || '',
     },
   };
 
   try {
+    console.log('Creating Cal.com booking for:', email);
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getCalHeaders(true),
       body: JSON.stringify(body),
     });
 
@@ -145,8 +178,18 @@ export async function createBooking(
       throw new Error(`Cal.com booking failed: ${response.status}`);
     }
 
-    const booking = await response.json() as CalBookingResponse;
-    return booking;
+    const result = await response.json() as CalV2BookingResponse;
+    console.log('Booking created successfully, uid:', result.data.uid);
+
+    // Convert v2 response to our internal format
+    return {
+      id: result.data.id,
+      uid: result.data.uid,
+      title: result.data.title,
+      startTime: result.data.start,
+      endTime: result.data.end,
+      status: result.data.status.toUpperCase(),
+    };
   } catch (error) {
     console.error('Failed to create booking:', error);
     throw error;
@@ -159,11 +202,18 @@ export async function cancelBooking(bookingUid: string): Promise<boolean> {
     return true;
   }
 
-  const url = `${calcom.baseUrl}/bookings/${bookingUid}/cancel?apiKey=${calcom.apiKey}`;
+  // Cal.com API v2 uses POST for cancellation
+  const url = `${calcom.baseUrl}/bookings/${bookingUid}/cancel`;
 
   try {
+    console.log('Cancelling Cal.com booking:', bookingUid);
+
     const response = await fetch(url, {
-      method: 'DELETE',
+      method: 'POST',
+      headers: getCalHeaders(true),
+      body: JSON.stringify({
+        cancellationReason: 'Cancelled via Facebook Messenger bot',
+      }),
     });
 
     if (!response.ok) {
@@ -172,6 +222,7 @@ export async function cancelBooking(bookingUid: string): Promise<boolean> {
       return false;
     }
 
+    console.log('Booking cancelled successfully');
     return true;
   } catch (error) {
     console.error('Failed to cancel booking:', error);
@@ -184,16 +235,27 @@ export async function getBooking(bookingUid: string): Promise<CalBookingResponse
     return null;
   }
 
-  const url = `${calcom.baseUrl}/bookings/${bookingUid}?apiKey=${calcom.apiKey}`;
+  const url = `${calcom.baseUrl}/bookings/${bookingUid}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getCalHeaders(),
+    });
 
     if (!response.ok) {
       return null;
     }
 
-    return await response.json() as CalBookingResponse;
+    const result = await response.json() as CalV2BookingResponse;
+    return {
+      id: result.data.id,
+      uid: result.data.uid,
+      title: result.data.title,
+      startTime: result.data.start,
+      endTime: result.data.end,
+      status: result.data.status.toUpperCase(),
+    };
   } catch (error) {
     console.error('Failed to get booking:', error);
     return null;

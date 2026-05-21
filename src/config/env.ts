@@ -43,7 +43,8 @@ export const config = {
     enabled: optionalEnv('CALCOM_ENABLED', 'false') === 'true',
     apiKey: optionalEnv('CALCOM_API_KEY', ''),
     eventTypeId: parseInt(optionalEnv('CALCOM_EVENT_TYPE_ID', '1'), 10),
-    baseUrl: 'https://api.cal.com/v1',
+    baseUrl: 'https://api.cal.com/v2',
+    apiVersion: '2024-09-04', // Cal.com API version header
   },
 
   // Database
