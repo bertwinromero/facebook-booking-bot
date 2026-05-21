@@ -36,6 +36,22 @@ export async function handleMessage(event: FacebookMessaging): Promise<void> {
     const state = conversation.state as ConversationState;
     const stateData = conversation.state_data as StateData;
 
+    // Check for "start over" commands
+    const lowerMessage = (messageText || '').toLowerCase().trim();
+    const isStartOver = lowerMessage === 'start over' ||
+                        lowerMessage === 'new booking' ||
+                        lowerMessage === 'reset' ||
+                        lowerMessage === 'start again';
+
+    if (isStartOver || (state === 'BOOKED' && !quickReplyPayload && !postbackPayload)) {
+      await db.resetConversation(conversation.id);
+      await facebook.sendTextMessage(
+        senderId,
+        "Hey! Ready to book another session? I can set you up with a demo or discovery call 😊"
+      );
+      return;
+    }
+
     // Get conversation history
     const history = await db.getRecentMessages(conversation.id, 10);
 
