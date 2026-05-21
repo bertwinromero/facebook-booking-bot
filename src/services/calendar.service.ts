@@ -51,10 +51,22 @@ function generateMockSlots(): AvailabilitySlot[] {
   return slots.slice(0, 5);
 }
 
+// API versions for different endpoints
+const API_VERSIONS = {
+  slots: '2024-09-04',
+  bookings: '2024-08-13',
+};
+
+// Different base URLs for different operations
+const API_URLS = {
+  slots: 'https://api.cal.com/v2',
+  bookings: 'https://api.cal.com/v2',
+};
+
 // Helper to get API headers for Cal.com v2
-function getCalHeaders(includeContentType = false): Record<string, string> {
+function getCalHeaders(endpoint: 'slots' | 'bookings', includeContentType = false): Record<string, string> {
   const headers: Record<string, string> = {
-    'cal-api-version': calcom.apiVersion,
+    'cal-api-version': API_VERSIONS[endpoint],
     'Authorization': `Bearer ${calcom.apiKey}`,
   };
   if (includeContentType) {
@@ -81,7 +93,7 @@ export async function getAvailability(
   const endStr = endDate.toISOString().split('T')[0];
 
   // Cal.com API v2 slots endpoint
-  const url = new URL(`${calcom.baseUrl}/slots`);
+  const url = new URL(`${API_URLS.slots}/slots`);
   url.searchParams.set('eventTypeId', calcom.eventTypeId.toString());
   url.searchParams.set('start', startStr);
   url.searchParams.set('end', endStr);
@@ -92,7 +104,7 @@ export async function getAvailability(
 
     const response = await fetch(url.toString(), {
       method: 'GET',
-      headers: getCalHeaders(),
+      headers: getCalHeaders('slots'),
     });
 
     if (!response.ok) {
@@ -146,7 +158,7 @@ export async function createBooking(
     };
   }
 
-  const url = `${calcom.baseUrl}/bookings`;
+  const url = `${API_URLS.bookings}/bookings`;
 
   // Cal.com API v2 booking format
   const body = {
@@ -165,10 +177,12 @@ export async function createBooking(
 
   try {
     console.log('Creating Cal.com booking for:', email);
+    console.log('Booking URL:', url);
+    console.log('Booking body:', JSON.stringify(body, null, 2));
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: getCalHeaders(true),
+      headers: getCalHeaders('bookings', true),
       body: JSON.stringify(body),
     });
 
@@ -203,14 +217,14 @@ export async function cancelBooking(bookingUid: string): Promise<boolean> {
   }
 
   // Cal.com API v2 uses POST for cancellation
-  const url = `${calcom.baseUrl}/bookings/${bookingUid}/cancel`;
+  const url = `${API_URLS.bookings}/bookings/${bookingUid}/cancel`;
 
   try {
     console.log('Cancelling Cal.com booking:', bookingUid);
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: getCalHeaders(true),
+      headers: getCalHeaders('bookings', true),
       body: JSON.stringify({
         cancellationReason: 'Cancelled via Facebook Messenger bot',
       }),
@@ -235,12 +249,12 @@ export async function getBooking(bookingUid: string): Promise<CalBookingResponse
     return null;
   }
 
-  const url = `${calcom.baseUrl}/bookings/${bookingUid}`;
+  const url = `${API_URLS.bookings}/bookings/${bookingUid}`;
 
   try {
     const response = await fetch(url, {
       method: 'GET',
-      headers: getCalHeaders(),
+      headers: getCalHeaders('bookings'),
     });
 
     if (!response.ok) {
